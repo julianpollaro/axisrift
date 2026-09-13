@@ -47,7 +47,8 @@ private:
         const auto file = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                             .getChildFile ("AxisRift").getChildFile ("license.txt");
         const auto text = file.loadFileAsString();
-        if (text.isEmpty() || ! text.contains ("signature=") || ! text.contains ("product=" + product)) return false;
+        if (text.isEmpty() || ! text.contains ("signature=")
+            || (! text.contains ("product=" + product) && ! text.contains ("product=ALL"))) return false;
         const auto payload = text.upToLastOccurrenceOf ("signature=", false, false);
         auto signature = text.fromLastOccurrenceOf ("signature=", false, false).trim();
         if (signature.containsAnyOf ("\\r\\n")) signature = signature.upToFirstOccurrenceOf ("\\r", false, false).upToFirstOccurrenceOf ("\\n", false, false);
@@ -55,7 +56,9 @@ private:
         if (! publicKey.isValid()) return false;
         juce::BigInteger signedHash; signedHash.parseString (signature, 16);
         if (! publicKey.applyToValue (signedHash)) return false;
-        juce::BigInteger expected; expected.parseString (juce::SHA256 (payload.toRawUTF8()).toHexString(), 16);
+        juce::SHA256 digest (juce::CharPointer_UTF8 (payload.toRawUTF8()));
+        juce::BigInteger expected;
+        expected.parseString (digest.toHexString(), 16);
         return signedHash == expected;
     }
 
