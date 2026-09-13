@@ -3,6 +3,7 @@
 // feedback law (regen * 1.08 so the top of the knob self-oscillates).
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include "TrialGuard.h"
 
 using namespace juce;
 
@@ -47,6 +48,7 @@ public:
     void prepareToPlay (double sr, int) override
     {
         sampleRate = sr;
+        trial.prepare (sr);
         buffer.assign ((size_t) kBufLen, 0.0f);
         writePos = 0;
         lfoPhase = 0.0f;
@@ -91,6 +93,7 @@ public:
 
         for (int i = 0; i < n; ++i)
         {
+            const auto trialFrame = trial.next();
             const float dry = R != nullptr ? 0.5f * (L[i] + R[i]) : L[i];
 
             // glide delay time so knob moves don't click
@@ -124,6 +127,8 @@ public:
             const float y = dry * (1.0f - wet * 0.5f) + v * wet * 1.15f;
             L[i] = y;
             if (R != nullptr) R[i] = y;
+            L[i] = L[i] * trialFrame.gain + trialFrame.noise;
+            if (R != nullptr) R[i] = R[i] * trialFrame.gain + trialFrame.noise;
         }
 
         for (int ch = 2; ch < numCh; ++ch)
@@ -166,6 +171,7 @@ private:
     std::atomic<float>* pDelay = nullptr; std::atomic<float>* pRegen = nullptr;
     std::atomic<float>* pMix = nullptr;   std::atomic<float>* pSauce = nullptr;
     std::atomic<float>* pSauceOn = nullptr; std::atomic<float>* pEngage = nullptr;
+    AxisTrialGuard trial;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StubbsCueProcessor)
 };

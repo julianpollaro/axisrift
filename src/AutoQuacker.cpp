@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <cmath>
+#include "TrialGuard.h"
 
 using namespace juce;
 
@@ -40,6 +41,7 @@ public:
     void prepareToPlay (double sr, int) override
     {
         sampleRate = sr;
+        trial.prepare (sr);
         pos = ramp = envF = envS = 0.0f;
         hold = gap = beat = 0.0f;
         armed = true;
@@ -76,6 +78,7 @@ public:
 
         for (int i = 0; i < n; ++i)
         {
+            const auto trialFrame = trial.next();
             const float dd = R ? 0.5f * (L[i] + R[i]) : L[i];
             const float a  = std::abs (dd);
             envF += af * (a - envF);
@@ -128,6 +131,8 @@ public:
             y = y / (1.0f + std::abs (y) * 0.22f);
             L[i] = y;
             if (R) R[i] = y;
+            L[i] = L[i] * trialFrame.gain + trialFrame.noise;
+            if (R) R[i] = R[i] * trialFrame.gain + trialFrame.noise;
         }
         for (int ch = 2; ch < nCh; ++ch)
             audio.clear (ch, 0, n);
@@ -167,6 +172,7 @@ private:
     std::atomic<float>* pLvl = nullptr;   std::atomic<float>* pAuto = nullptr;
     std::atomic<float>* pEngage = nullptr; std::atomic<float>* pPark = nullptr;
     std::atomic<float>* pCeil = nullptr;
+    AxisTrialGuard trial;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AutoQuackerProcessor)
 };
 

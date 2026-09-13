@@ -8,6 +8,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_dsp/juce_dsp.h>
 #include <cmath>
+#include "TrialGuard.h"
 
 using namespace juce;
 
@@ -62,6 +63,7 @@ public:
     void prepareToPlay (double sr, int block) override
     {
         sampleRate = sr;
+        trial.prepare (sr);
         ignoreUnused (block);
         for (int c = 0; c < 2; ++c) { hpf[c].reset(); presBell[c].reset(); airShelf[c].reset(); deEssHp[c].reset(); }
         updateFilters();
@@ -138,6 +140,7 @@ public:
 
         for (int i = 0; i < n; ++i)
         {
+            const auto trialFrame = trial.next();
             for (int c = 0; c < nCh; ++c)
             {
                 const int fc = c & 1;
@@ -191,7 +194,7 @@ public:
                     dline[(size_t) delayWrite] = x + wet * delFb;
                     x += wet * delMix;
                 }
-                buffer.setSample (c, i, x * outG);
+                buffer.setSample (c, i, x * outG * trialFrame.gain + trialFrame.noise);
             }
             if (++delayWrite >= delayLen) delayWrite = 0;
         }
@@ -268,6 +271,7 @@ public:
 private:
     AudioProcessorValueTreeState apvts;
     std::atomic<float>* pHpf,*pGate,*pComp,*pPres,*pAir,*pDeess,*pVerb,*pDelMix,*pDelTime,*pDelFb,*pOut,*pEngage;
+    AxisTrialGuard trial;
 
     dsp::IIR::Filter<float> hpf[2], presBell[2], airShelf[2], deEssHp[2];
     Reverb reverb;
