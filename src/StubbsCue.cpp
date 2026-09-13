@@ -22,6 +22,7 @@ public:
               .withOutput ("Output", AudioChannelSet::stereo(), true)),
           apvts (*this, nullptr, "PARAMS", createLayout())
     {
+        trial.setProduct ("StubbsCue");
         pDelay  = apvts.getRawParameterValue ("delay");
         pRegen  = apvts.getRawParameterValue ("helpings");
         pMix    = apvts.getRawParameterValue ("mix");

@@ -16,6 +16,7 @@ public:
               .withOutput ("Output", AudioChannelSet::stereo(), true)),
           apvts (*this, nullptr, "PARAMS", createLayout())
     {
+        trial.setProduct ("AutoQuacker");
         pSpeed  = apvts.getRawParameterValue ("speed");
         pVocal  = apvts.getRawParameterValue ("vocal");
         pLvl    = apvts.getRawParameterValue ("lvl");

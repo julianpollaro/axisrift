@@ -24,6 +24,7 @@ public:
               .withOutput ("Output", AudioChannelSet::stereo(), true)),
           apvts (*this, nullptr, "PARAMS", createLayout())
     {
+        trial.setProduct ("PearlVox");
         pHpf     = apvts.getRawParameterValue ("hpf");
         pGate    = apvts.getRawParameterValue ("gate");
         pComp    = apvts.getRawParameterValue ("comp");
